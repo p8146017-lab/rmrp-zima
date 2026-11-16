@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RMRP Портал — Александр Зима ❄️</title>
+  
+  <!-- Подключение Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Подключение шрифта Inter и Montserrat для зимних заголовков -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Подключение иконок Lucide -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Montserrat', 'sans-serif'],
+          },
+          colors: {
+            winter: {
+              950: '#040b16',
+              900: '#081529',
+              800: '#0f2544',
+              700: '#173863',
+              ice: '#bae6fd',
+              frost: '#e0f2fe',
+              accent: '#38bdf8',
+              silver: '#cbd5e1'
+            }
+          },
+          animation: {
+            'spin-slow': 'spin 12s linear infinite',
+            'float': 'float 4s ease-in-out infinite',
+            'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
+            'pulse-glow': 'pulseGlow 3s infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-10px)' },
+            },
+            fadeInUp: {
+              '0%': { opacity: '0', transform: 'translateY(24px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            pulseGlow: {
+              '0%, 100%': { boxShadow: '0 0 20px rgba(56, 189, 248, 0.25)' },
+              '50%': { boxShadow: '0 0 38px rgba(186, 230, 253, 0.5)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Базовые зимние стили и эффект матового стекла на глубоком черном фоне */
+    body {
+      background: #000000;
+      color: #f8fafc;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Фоновый Canvas со снегом */
+    #snow-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Эффект матового льда (Glassmorphism) */
+    .frost-glass {
+      background: rgba(12, 16, 24, 0.72);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.85), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .frost-glass-card {
+      background: linear-gradient(145deg, rgba(16, 20, 28, 0.8) 0%, rgba(8, 10, 15, 0.9) 100%);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .frost-glass-card:hover {
+      border-color: rgba(255, 255, 255, 0.45);
+      transform: translateY(-4px);
+      box-shadow: 0 14px 34px -6px rgba(255, 255, 255, 0.12), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+    }
+
+    /* Ледяное свечение текста */
+    .ice-text-glow {
+      text-shadow: 0 0 24px rgba(255, 255, 255, 0.45), 0 0 48px rgba(186, 230, 253, 0.2);
+    }
+
+    /* Кастомный скроллбар */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #000000;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #27272a;
+      border-radius: 9999px;
+      border: 2px solid #000000;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #ffffff;
+    }
+
+    /* Скрытие скроллбара для горизонтальных вкладок на мобильных */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-white/25 selection:text-white">
+
+  <!-- Слой падающего снега -->
+  <canvas id="snow-canvas"></canvas>
+
+  <!-- Боковые ледяные панели по краям экрана (видны на широких экранах) -->
+  <aside id="left-edge-widget" class="hidden 2xl:flex fixed left-4 top-28 z-20 w-56 flex-col gap-3 pointer-events-auto">
+    <div class="frost-glass rounded-2xl p-4 text-xs space-y-2.5">
+      <div class="flex items-center gap-2 text-white font-display font-bold uppercase tracking-wider text-[11px]">
+        <i data-lucide="compass" class="w-4 h-4 text-zinc-300"></i>
+        <span>Путь новичка RMRP</span>
+      </div>
+      <div class="space-y-2 text-zinc-300 leading-snug">
+        <div class="p-2 rounded-xl bg-white/5 border border-white/10">
+          <span class="text-white font-semibold block">1. Старт (СМИ / ЦГБ)</span>
+          Получи паспорт, медкарту, права и диплом медика.
+        </div>
+        <div class="p-2 rounded-xl bg-white/5 border border-white/10">
+          <span class="text-white font-semibold block">2. Служба (ВС РФ)</span>
+          Пройди призыв и получи военный билет.
+        </div>
+        <div class="p-2 rounded-xl bg-white/5 border border-white/10">
+          <span class="text-white font-semibold block">3. Силовики и Элита</span>
+          УВД / ГИБДД / ФСВНГ → далее ФСБ, Прокуратура или СК.
+        </div>
+      </div>
+    </div>
+
+    <div class="frost-glass rounded-2xl p-4 text-xs space-y-2">
+      <div class="flex items-center gap-2 text-white font-display font-bold uppercase tracking-wider text-[11px]">
+        <i data-lucide="snowflake" class="w-4 h-4 text-white animate-spin-slow"></i>
+        <span>Статус портала</span>
+      </div>
+      <p class="text-zinc-400">6 серверов активны</p>
+      <div class="flex flex-wrap gap-1 pt-1">
+        <span class="px-2 py-0.5 rounded bg-white/10 text-[10px] text-zinc-200">Рублевка</span>
+        <span class="px-2 py-0.5 rounded bg-white/10 text-[10px] text-zinc-200">Арбат</span>
+        <span class="px-2 py-0.5 rounded bg-white/10 text-[10px] text-zinc-200">Патрики</span>
+        <span class="px-2 py-0.5 rounded bg-white/10 text-[10px] text-zinc-200">Тверской</span>
+        <span class="px-2 py-0.5 rounded bg-white/10 text-[10px] text-zinc-200">Кутузовский</span>
+        <span class="px-2 py-0.5 rounded bg-white/10 text-[10px] text-zinc-200">Лубянка</span>
+      </div>
+    </div>
+  </aside>
+
+  <aside id="right-edge-widget" class="hidden 2xl:flex fixed right-4 top-28 z-20 w-56 flex-col gap-3 pointer-events-auto">
+    <div class="frost-glass rounded-2xl p-4 text-xs space-y-2.5">
+      <div class="flex items-center gap-2 text-white font-display font-bold uppercase tracking-wider text-[11px]">
+        <i data-lucide="scale" class="w-4 h-4 text-zinc-300"></i>
+        <span>Статьи УК РФ (RMRP)</span>
+      </div>
+      <ul class="space-y-1.5 text-zinc-300">
+        <li class="p-2 rounded-xl bg-white/5 border border-white/10">
+          <b class="text-white">ст. 37 УК РФ</b> — Убийство
+        </li>
+        <li class="p-2 rounded-xl bg-white/5 border border-white/10">
+          <b class="text-white">ст. 38 / 39 УК</b> — Тяжкий вред / угроза
+        </li>
+        <li class="p-2 rounded-xl bg-white/5 border border-white/10">
+          <b class="text-white">ст. 41 / 55 УК</b> — Похищение / заложник
+        </li>
+        <li class="p-2 rounded-xl bg-white/5 border border-white/10">
+          <b class="text-white">ст. 46 / 47 / 49</b> — Грабёж, разбой, угон
+        </li>
+        <li class="p-2 rounded-xl bg-white/5 border border-white/10">
+          <b class="text-white">ст. 62 / 63 УК</b> — Проникновение / оружие
+        </li>
+        <li class="p-2 rounded-xl bg-white/5 border border-white/10">
+          <b class="text-white">ст. 64 / 64.1 УК</b> — Наркотические средства
+        </li>
+        <li class="p-2 rounded-xl bg-white/5 border border-white/10">
+          <b class="text-white">ст. 76 / 77 / 79</b> — Власть и взятка
+        </li>
+        <li class="p-2 rounded-xl bg-white/5 border border-white/10">
+          <b class="text-white">ст. 89 / 90 / 91</b> — Нападение / оскорбление
+        </li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- Контейнер для уведомлений (вместо alert) -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- =========================================================
+       ЭКРАН 1: ПРИВЕТСТВЕННЫЙ ЭКРАН И ВХОД ДЛЯ АЛЕКСАНДРА ЗИМЫ
+       ========================================================= -->
+  <section id="welcome-screen" class="relative z-10 min-h-screen flex items-center justify-center p-4 sm:p-6 transition-opacity duration-500">
+    <div class="frost-glass rounded-3xl p-6 sm:p-10 md:p-12 max-w-2xl w-full text-center relative overflow-hidden animate-fade-in-up">
+      
+      <!-- Декоративные морозные блики -->
+      <div class="absolute -top-24 -left-24 w-56 h-56 bg-sky-400/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -right-24 w-56 h-56 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- Анимированная большая снежинка -->
+      <div class="mx-auto mb-6 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-white/20 to-zinc-700/20 border border-white/30 flex items-center justify-center animate-float">
+        <svg class="w-12 h-12 sm:w-14 sm:h-14 text-white animate-spin-slow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <line x1="12" y1="2" x2="12" y2="22"></line>
+          <path d="m20 16-4-4 4-4"></path>
+          <path d="m4 8 4 4-4 4"></path>
+          <path d="m16 4-4 4-4-4"></path>
+          <path d="m8 20 4-4 4 4"></path>
+        </svg>
+      </div>
+
+      <!-- Бейдж статуса -->
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/25 text-zinc-200 text-xs sm:text-sm font-medium mb-5">
+        <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+        Приватный штаб RMRP • Зимнее издание
+      </div>
+
+      <!-- Главный заголовок приветствия -->
+      <h1 class="font-display text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight mb-4 ice-text-glow">
+        Приветствую, многоуважаемый Создатель сайта <span class="bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">Александр Зима</span> ❄️
+      </h1>
+
+      <p class="text-slate-300 text-sm sm:text-base max-w-lg mx-auto mb-8 leading-relaxed">
+        Добро пожаловать в закрытую базу знаний по вступлению во все государственные и криминальные фракции RMRP на всех серверах.
+      </p>
+
+      <!-- Форма входа по секретному коду -->
+      <div class="max-w-md mx-auto space-y-4">
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-sky-300/70">
+            <i data-lucide="key-round" class="w-5 h-5"></i>
+          </div>
+          <input 
+            type="password" 
+            id="access-code-input" 
+            placeholder="Введите секретный код (по умолчанию: zima)"
+            class="w-full pl-11 pr-12 py-3.5 rounded-2xl bg-slate-950/60 border border-sky-300/25 text-white placeholder-slate-400 focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20 transition text-sm sm:text-base"
+          />
+          <button 
+            type="button" 
+            id="toggle-password-btn"
+            title="Показать/скрыть пароль"
+            class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-sky-200 transition"
+          >
+            <i data-lucide="eye" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <p id="login-error" class="text-rose-400 text-xs sm:text-sm hidden">
+          Неверный секретный код! Подсказка для своих: <span class="font-mono font-semibold text-sky-300">zima</span>
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-3 pt-1">
+          <button 
+            id="enter-site-btn"
+            class="flex-1 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-white to-zinc-200 hover:from-zinc-100 hover:to-white text-black font-bold shadow-lg shadow-white/15 transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <span>Войти на портал</span>
+            <i data-lucide="snowflake" class="w-5 h-5"></i>
+          </button>
+          
+          <button 
+            id="quick-creator-btn"
+            class="py-3.5 px-5 rounded-2xl bg-zinc-900/90 hover:bg-zinc-800 border border-white/25 text-white font-medium transition-all active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer text-sm"
+          >
+            <i data-lucide="crown" class="w-4 h-4 text-amber-300"></i>
+            <span>Вход как Создатель</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-8 pt-5 border-t border-sky-200/10 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
+        <span class="flex items-center gap-1.5"><i data-lucide="shield-check" class="w-4 h-4 text-sky-400"></i> Доступ только для своих</span>
+        <span class="flex items-center gap-1.5"><i data-lucide="server" class="w-4 h-4 text-sky-400"></i> Все серверы RMRP</span>
+        <span class="flex items-center gap-1.5"><i data-lucide="sparkles" class="w-4 h-4 text-sky-400"></i> Сделано для Александра Зимы</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       ЭКРАН 2: ОСНОВНОЙ КОНТЕНТ САЙТА (ГАЙДЫ ПО ФРАКЦИЯМ RMRP)
+       ========================================================= -->
+  <div id="main-portal" class="relative z-10 hidden opacity-0 transition-opacity duration-500">
+    
+    <!-- Верхняя навигационная панель -->
+    <header class="sticky top-0 z-30 frost-glass border-b border-sky-300/15">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+        <!-- Логотип и приветствие в шапке -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/10 border border-white/25 flex items-center justify-center text-white">
+            <i data-lucide="snowflake" class="w-6 h-6 animate-spin-slow"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-display font-bold text-base sm:text-lg text-white tracking-wide">RMRP WIKI</span>
+              <span class="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-md bg-white/15 text-zinc-100 border border-white/20">Winter Edition</span>
+            </div>
+            <p class="text-xs text-zinc-400 truncate max-w-[210px] sm:max-w-none">
+              Владелец: <span class="font-semibold text-white">Александр Зима ❄️</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Кнопки управления (Админ-панель и выход) -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <button 
+            id="open-add-modal-btn"
+            class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-white to-zinc-200 hover:from-zinc-100 hover:to-white text-black text-xs sm:text-sm font-bold shadow-md shadow-white/10 transition flex items-center gap-1.5 cursor-pointer"
+          >
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>Добавить гайд</span>
+          </button>
+
+          <button 
+            id="export-data-btn"
+            title="Скопировать JSON-код всех гайдов для резервной копии или обновления"
+            class="p-2 sm:px-3 sm:py-2 rounded-xl bg-zinc-900/90 hover:bg-zinc-800 border border-white/20 text-zinc-200 text-xs sm:text-sm font-medium transition flex items-center gap-1.5 cursor-pointer"
+          >
+            <i data-lucide="code-2" class="w-4 h-4"></i>
+            <span class="hidden md:inline">Экспорт кода</span>
+          </button>
+
+          <button 
+            id="logout-btn"
+            title="Вернуться на экран приветствия"
+            class="p-2 rounded-xl bg-zinc-900/90 hover:bg-rose-500/20 border border-white/20 hover:border-rose-400/40 text-zinc-300 hover:text-rose-200 transition cursor-pointer"
+          >
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Основной контейнер -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      
+      <!-- Баннер-приветствие внутри портала -->
+      <div class="frost-glass rounded-3xl p-6 sm:p-8 relative overflow-hidden">
+        <div class="absolute right-4 top-4 opacity-15 pointer-events-none hidden sm:block">
+          <i data-lucide="snowflake" class="w-32 h-32 text-sky-200"></i>
+        </div>
+        <div class="max-w-4xl">
+          <div class="inline-flex items-center gap-2 text-sky-300 text-xs sm:text-sm font-medium mb-2">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+            <span>Полный справочник фракций на 6 серверах RMRP (Рублевка • Арбат • Патрики • Тверской • Кутузовский • Лубянка)</span>
+          </div>
+          <h2 class="font-display text-2xl sm:text-3xl font-bold text-white mb-3">
+            Гайд по фракциям области: Светлая и Тёмная стороны
+          </h2>
+          <p class="text-slate-200 text-sm sm:text-base leading-relaxed mb-3">
+            В данном гайде я расскажу про то, какие бывают в области фракции, как в них вступить и чем они занимаются. Как только немножко встали на ноги, прикупили одежды, квартирку и ведро с болтами — можно подумать и о карьере. А тут уже решать вам, на чью сторону вы хотите встать: <span class="text-sky-300 font-semibold">светлую (государственную)</span> или <span class="text-rose-300 font-semibold">тёмную (криминальную)</span>!
+          </p>
+          <div class="flex flex-wrap items-center gap-2 text-xs text-slate-300">
+            <span class="px-2.5 py-1 rounded-lg bg-white/10 border border-white/20 text-white font-medium">🛡️ 12 Государственных организаций</span>
+            <span class="px-2.5 py-1 rounded-lg bg-rose-500/15 border border-rose-400/25 text-rose-200 font-medium">💀 4 Криминальные фракции</span>
+            <span class="px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-400/30 text-amber-200 font-medium">👑 Поступление на Админку</span>
+            <span class="px-2.5 py-1 rounded-lg bg-white/10 border border-white/20 text-zinc-100 font-medium">📜 Действующие статьи RMRP</span>
+          </div>
+        </div>
+
+        <!-- Рекомендация Создателя Александра Зимы -->
+        <div class="mt-6 rounded-2xl bg-white/5 border border-white/20 p-4 sm:p-5">
+          <div class="flex items-center gap-2 text-white font-display font-bold text-sm sm:text-base mb-2">
+            <i data-lucide="award" class="w-5 h-5 text-amber-300 shrink-0"></i>
+            <span>Рекомендация от Создателя (Александра Зимы): куда пойти сразу, а куда с опытом</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs sm:text-sm text-zinc-300">
+            <div class="p-3 rounded-xl bg-black/60 border border-white/10">
+              <span class="text-white font-semibold block mb-1">🟢 Если вы только зашли:</span>
+              Идите в <b>СМИ «Москва LIVE»</b>, <b>ЦГБ №3 / №7</b> (нужен диплом медика) или сразу в <b>ВС РФ</b> (Армию) за военным билетом. Если душа лежит к криминалу — <b>Кафе «Бакшиш»</b> или <b>ЧОП «Синдикат»</b> (нужны только паспорт и медкарта).
+            </div>
+            <div class="p-3 rounded-xl bg-black/60 border border-white/10">
+              <span class="text-white font-semibold block mb-1">🟡 Когда получили военный билет:</span>
+              Оформляйте лицензию на оружие, сводите татуировки с открытых мест и вступайте в <b>УВД по ЦАО</b>, <b>УГИБДД</b>, <b>Росгвардию (ФСВНГ)</b> или <b>УФСИН</b> для набора опыта в силовых структурах.
+            </div>
+            <div class="p-3 rounded-xl bg-black/60 border border-white/10">
+              <span class="text-white font-semibold block mb-1">🔴 Для опытных игроков:</span>
+              С дипломом юриста и знанием УПК подавайте заявку на форум в <b>Прокуратуру или Следственный комитет</b>, а из силовых ведомств открывается путь в <b>ФСБ</b> или на пост <b>Администратора</b>.
+            </div>
+          </div>
+        </div>
+
+        <!-- Быстрая шпаргалка (РП-термины) -->
+        <div class="mt-6 pt-5 border-t border-white/15 flex flex-wrap items-center justify-between gap-4">
+          <div class="flex flex-wrap items-center gap-2 text-xs">
+            <span class="text-white font-semibold">Частые термины на обзвоне:</span>
+            <span class="px-2.5 py-1 rounded-lg bg-zinc-900/90 border border-white/15 text-zinc-200">ДМ — убийство без причины</span>
+            <span class="px-2.5 py-1 rounded-lg bg-zinc-900/90 border border-white/15 text-zinc-200">ТК — убийство своих</span>
+            <span class="px-2.5 py-1 rounded-lg bg-zinc-900/90 border border-white/15 text-zinc-200">МГ — инфа из реального мира</span>
+            <span class="px-2.5 py-1 rounded-lg bg-zinc-900/90 border border-white/15 text-zinc-200">ПГ — воображение из себя героя</span>
+          </div>
+          <button id="open-cheatsheet-btn" class="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs sm:text-sm text-white font-medium flex items-center gap-1.5 transition cursor-pointer">
+            <span>Шпаргалка собеседования</span>
+            <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Панель фильтров: Выбор сервера + Сфера (Светлая/Тёмная) + Поиск -->
+      <div class="space-y-4">
+        <!-- Вкладки 6 серверов RMRP -->
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <span class="text-xs uppercase tracking-wider font-semibold text-sky-300/80 flex items-center gap-1.5">
+            <i data-lucide="globe" class="w-4 h-4"></i> Выберите сервер RMRP (6 серверов):
+          </span>
+          <div class="flex items-center gap-3">
+            <span id="active-server-badge" class="text-xs px-2.5 py-0.5 rounded-full bg-sky-400/15 border border-sky-300/25 text-sky-200 font-medium">
+              Сервер: Все 6 серверов
+            </span>
+            <span id="guides-counter" class="text-xs text-slate-400">Показано фракций: 16</span>
+          </div>
+        </div>
+
+        <div id="server-tabs" class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+          <!-- Кнопки серверов генерируются через JS -->
+        </div>
+
+        <!-- Строка поиска и переключение Светлой / Тёмной стороны -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+          <div class="md:col-span-7 relative">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-sky-300/70">
+              <i data-lucide="search" class="w-4 h-4"></i>
+            </div>
+            <input 
+              type="text" 
+              id="search-input" 
+              placeholder="Поиск по фракции или требованиям (например: ФСБ, ЦГБ, военный билет, Бакшиш, диплом)..."
+              class="w-full pl-10 pr-4 py-3 rounded-2xl frost-glass text-sm text-white placeholder-slate-400 focus:outline-none focus:border-sky-400 transition"
+            />
+          </div>
+
+          <div class="md:col-span-5">
+            <select 
+              id="category-filter"
+              class="w-full px-4 py-3 rounded-2xl frost-glass text-sm text-white bg-zinc-950/90 focus:outline-none focus:border-white transition cursor-pointer"
+            >
+              <option value="all">❄️ Все разделы (Фракции, Админка и Законы — 18)</option>
+              <option value="Законодательство RMRP">📜 Законодательство RMRP (База законов)</option>
+              <option value="Администрация проекта">👑 Поступление на Админку RMRP (1)</option>
+              <option value="Государственная фракция">🛡️ Светлая сторона — Государственные фракции (12)</option>
+              <option value="Криминальная фракция">💀 Тёмная сторона — Криминальные фракции (4)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Сетка карточек фракций -->
+      <div id="guides-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Карточки рендерятся динамически -->
+      </div>
+
+      <!-- Пустое состояние, если ничего не найдено -->
+      <div id="empty-state" class="hidden frost-glass rounded-3xl p-10 text-center max-w-lg mx-auto">
+        <i data-lucide="snowflake" class="w-12 h-12 text-white/60 mx-auto mb-3"></i>
+        <h3 class="text-lg font-bold text-white mb-1">Гайды не найдены</h3>
+        <p class="text-sm text-zinc-400 mb-4">Попробуйте изменить выбранный сервер, очистить поиск или добавьте свой гайд через кнопку в шапке.</p>
+        <button id="reset-filters-btn" class="px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-white text-sm font-medium transition cursor-pointer">
+          Сбросить фильтры
+        </button>
+      </div>
+
+    </main>
+
+    <!-- Подвал сайта -->
+    <footer class="border-t border-sky-300/10 mt-16 py-8 text-center text-xs sm:text-sm text-slate-400">
+      <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <p>❄️ Зимний портал RMRP — Создатель: <span class="text-sky-200 font-semibold">Александр Зима</span></p>
+        <p class="text-slate-500">Все данные сохраняются локально в браузере • Для компании друзей</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- =========================================================
+       МОДАЛЬНОЕ ОКНО 1: ПОДРОБНЫЙ ГАЙД ПО ФРАКЦИИ
+       ========================================================= -->
+  <div id="guide-modal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+    <div class="frost-glass rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-sky-300/30 shadow-2xl animate-fade-in-up">
+      <!-- Шапка модалки -->
+      <div class="p-5 sm:p-6 border-b border-sky-300/15 flex items-start justify-between gap-4 bg-slate-900/40">
+        <div class="flex items-center gap-3.5">
+          <div id="modal-icon-box" class="w-12 h-12 rounded-2xl bg-sky-500/20 border border-sky-300/30 flex items-center justify-center text-2xl shrink-0">
+            🚓
+          </div>
+          <div>
+            <div class="flex flex-wrap items-center gap-2 mb-1">
+              <span id="modal-category" class="text-[11px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-sky-400/15 text-sky-200 border border-sky-300/20">Сфера</span>
+              <span id="modal-servers" class="text-xs text-slate-300">Серверы: Все 6 серверов RMRP</span>
+            </div>
+            <h3 id="modal-title" class="font-display text-xl sm:text-2xl font-bold text-white">Название фракции</h3>
+          </div>
+        </div>
+        <button id="close-guide-modal" class="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white transition cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Прокручиваемое содержимое гайда -->
+      <div class="p-5 sm:p-6 overflow-y-auto space-y-5 text-sm sm:text-base">
+        
+        <!-- Описание деятельности фракции -->
+        <div class="rounded-2xl bg-white/5 border border-sky-300/15 p-4 sm:p-5">
+          <h4 class="font-display font-bold text-sky-200 flex items-center gap-2 mb-2 text-sm uppercase tracking-wider">
+            <i data-lucide="info" class="w-4 h-4 text-sky-400"></i>
+            <span>Чем занимается фракция</span>
+          </h4>
+          <p id="modal-description" class="text-slate-200 leading-relaxed whitespace-pre-line"></p>
+        </div>
+
+        <!-- Блок 1: Интерактивный чек-лист требований -->
+        <div class="rounded-2xl bg-slate-950/60 border border-sky-300/20 p-4 sm:p-5">
+          <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <h4 class="font-display font-bold text-sky-200 flex items-center gap-2">
+              <i data-lucide="clipboard-check" class="w-5 h-5 text-sky-400"></i>
+              <span>Требования для приёма (нажимай, чтобы отметить готовое)</span>
+            </h4>
+            <span id="checklist-progress" class="text-xs px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-200 font-semibold">0 / 0 готово</span>
+          </div>
+          <ul id="modal-requirements" class="space-y-2 text-slate-300"></ul>
+        </div>
+
+        <!-- Блок 2: Время и способы трудоустройства -->
+        <div class="rounded-2xl bg-sky-950/45 border border-sky-400/25 p-4 sm:p-5">
+          <h4 class="font-display font-bold text-sky-200 flex items-center gap-2 mb-3">
+            <i data-lucide="clock" class="w-5 h-5 text-sky-400"></i>
+            <span>Как и когда можно устроиться (время по МСК и способы)</span>
+          </h4>
+          <ul id="modal-steps" class="space-y-2 text-slate-200"></ul>
+        </div>
+
+        <!-- Блок 3: Совет создателя гайда -->
+        <div class="rounded-2xl bg-slate-950/50 border border-sky-300/15 p-4 sm:p-5">
+          <h4 class="font-display font-bold text-sky-200 flex items-center gap-2 mb-2">
+            <i data-lucide="lightbulb" class="w-5 h-5 text-amber-300"></i>
+            <span>Совет для новичков и серверов RMRP</span>
+          </h4>
+          <p id="modal-server-notes" class="text-slate-300 text-sm leading-relaxed"></p>
+        </div>
+
+      </div>
+
+      <!-- Футер модалки -->
+      <div class="p-4 sm:px-6 border-t border-white/15 bg-zinc-950/60 flex items-center justify-between gap-3">
+        <button id="delete-guide-btn" class="px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/30 text-rose-200 text-xs sm:text-sm font-medium transition flex items-center gap-1.5 cursor-pointer">
+          <i data-lucide="trash-2" class="w-4 h-4"></i>
+          <span>Удалить карточку</span>
+        </button>
+        <button id="close-guide-modal-bottom" class="px-5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-black text-sm font-bold transition cursor-pointer">
+          Понятно, закрыть
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       МОДАЛЬНОЕ ОКНО 2: ДОБАВЛЕНИЕ НОВОЙ ФРАКЦИИ (АДМИН-ПАНЕЛЬ)
+       ========================================================= -->
+  <div id="add-guide-modal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+    <div class="frost-glass rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-sky-300/30 shadow-2xl">
+      <div class="p-5 sm:p-6 border-b border-sky-300/15 flex items-center justify-between bg-slate-900/40">
+        <div class="flex items-center gap-2.5">
+          <i data-lucide="file-plus-2" class="w-6 h-6 text-sky-400"></i>
+          <h3 class="font-display text-lg sm:text-xl font-bold text-white">Добавить новую фракцию RMRP</h3>
+        </div>
+        <button id="close-add-modal" class="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white transition cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="add-guide-form" class="p-5 sm:p-6 overflow-y-auto space-y-4 text-sm">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div class="sm:col-span-3">
+            <label class="block text-sky-200 font-medium mb-1">Название фракции *</label>
+            <input type="text" id="new-title" required placeholder="Например: Новая фракция RMRP" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/70 border border-sky-300/25 text-white focus:outline-none focus:border-sky-400" />
+          </div>
+          <div>
+            <label class="block text-sky-200 font-medium mb-1">Иконка (Эмодзи)</label>
+            <input type="text" id="new-icon" value="❄️" maxlength="4" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/70 border border-sky-300/25 text-white text-center text-lg focus:outline-none focus:border-sky-400" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-zinc-200 font-medium mb-1">Раздел / Сфера</label>
+            <select id="new-category" class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950/90 border border-white/25 text-white focus:outline-none focus:border-white">
+              <option value="Государственная фракция">🛡️ Государственная фракция (Светлая сторона)</option>
+              <option value="Криминальная фракция">💀 Криминальная фракция (Тёмная сторона)</option>
+              <option value="Администрация проекта">👑 Администрация проекта (Админка)</option>
+              <option value="Законодательство RMRP">📜 Законодательство RMRP</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-zinc-200 font-medium mb-1">Сервер RMRP</label>
+            <select id="new-server" class="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950/90 border border-white/25 text-white focus:outline-none focus:border-white">
+              <option value="Все серверы">Все 6 серверов</option>
+              <option value="Рублевка">Рублевка</option>
+              <option value="Арбат">Арбат</option>
+              <option value="Патрики">Патрики</option>
+              <option value="Тверской">Тверской</option>
+              <option value="Кутузовский">Кутузовский</option>
+              <option value="Лубянка">Лубянка</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sky-200 font-medium mb-1">Описание и задачи фракции *</label>
+          <textarea id="new-description" rows="3" required placeholder="Чем занимается организация..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/70 border border-sky-300/25 text-white focus:outline-none focus:border-sky-400"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-sky-200 font-medium mb-1">Требования для приёма (каждое с новой строки) *</label>
+          <textarea id="new-requirements" rows="3" required placeholder="Паспорт гражданина Российской Федерации&#10;Медицинская карта&#10;Справка от нарколога" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/70 border border-sky-300/25 text-white focus:outline-none focus:border-sky-400"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-sky-200 font-medium mb-1">Время и способы устройства (каждый пункт с новой строки) *</label>
+          <textarea id="new-steps" rows="3" required placeholder="Объявление в гос. новостях&#10;Электронная заявка" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/70 border border-sky-300/25 text-white focus:outline-none focus:border-sky-400"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-sky-200 font-medium mb-1">Совет / примечание по серверам</label>
+          <input type="text" id="new-server-notes" placeholder="Например: Актуально для всех 6 серверов RMRP." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/70 border border-sky-300/25 text-white focus:outline-none focus:border-sky-400" />
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-3">
+          <button type="button" id="cancel-add-btn" class="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-white/15 text-zinc-300 font-medium transition cursor-pointer">
+            Отмена
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-white to-zinc-200 hover:from-zinc-100 hover:to-white text-black font-bold shadow-lg shadow-white/15 transition cursor-pointer">
+            Сохранить гайд ❄️
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       МОДАЛЬНОЕ ОКНО 3: ПОЛНАЯ ШПАРГАЛКА ДЛЯ СОБЕСЕДОВАНИЯ RMRP
+       ========================================================= -->
+  <div id="cheatsheet-modal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+    <div class="frost-glass rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-sky-300/30 shadow-2xl">
+      <div class="p-5 border-b border-sky-300/15 flex items-center justify-between bg-slate-900/40">
+        <h3 class="font-display text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+          <i data-lucide="book-open-check" class="w-5 h-5 text-sky-400"></i>
+          <span>Шпаргалка новичка на собеседовании RMRP</span>
+        </h3>
+        <button id="close-cheatsheet-modal" class="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white transition cursor-pointer">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="p-5 sm:p-6 overflow-y-auto space-y-5 text-sm text-slate-200">
+        <div>
+          <h4 class="font-bold text-sky-300 mb-2">1. Правильные РП-отыгровки передачи документов</h4>
+          <div class="p-3.5 rounded-xl bg-slate-950/70 border border-sky-300/15 font-mono text-xs space-y-1.5 text-sky-100">
+            <p>/me сунул правую руку в карман куртки, после чего нащупал и достал паспорт</p>
+            <p>/do Паспорт в правой руке.</p>
+            <p>/me протянул паспорт человеку напротив</p>
+            <p class="text-slate-400">// Далее системно передаем документ через меню взаимодействия (G)</p>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-sky-300 mb-2">2. Ловушки на психотесте (разница чатов)</h4>
+          <ul class="space-y-2 text-slate-300 list-disc list-inside">
+            <li>Если спрашивают в <b>IC (голосовой или обычный чат)</b>: «Что такое ДМ?» — отвечаем по РП: <i>«Дядя Миша»</i> или <i>«Дом Медведя»</i>, так как персонаж не знает игровых терминов.</li>
+            <li>Если спрашивают в <b>OOC (/b чат)</b>: «Что такое ДМ, ТК, МГ?» — отвечаем реальными терминами: <i>«ДМ — убийство без причины, ТК — тимкилл, МГ — метагейминг»</i>.</li>
+            <li>Если проверяющий пишет в /b «Повернитесь спиной», а в голос молчит — <b>не поворачивайтесь</b>, иначе завалят за МГ!</li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-sky-300 mb-2">3. Основные термины RMRP</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div class="p-2.5 rounded-xl bg-slate-950/60 border border-sky-300/10"><b>ДМ (DM)</b> — убийство/нанесение урона без IC причины</div>
+            <div class="p-2.5 rounded-xl bg-slate-950/60 border border-sky-300/10"><b>ДБ (DB)</b> — убийство/таран транспортом без причины</div>
+            <div class="p-2.5 rounded-xl bg-slate-950/60 border border-sky-300/10"><b>СК (SK)</b> — убийство на месте появления (спавне)</div>
+            <div class="p-2.5 rounded-xl bg-slate-950/60 border border-sky-300/10"><b>ТК (TK)</b> — убийство членов своей фракции</div>
+            <div class="p-2.5 rounded-xl bg-slate-950/60 border border-sky-300/10"><b>ПГ (PG)</b> — превышение физ. возможностей (1 против 3)</div>
+            <div class="p-2.5 rounded-xl bg-slate-950/60 border border-sky-300/10"><b>РК (RK)</b> — возвращение на место смерти / месть</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       JAVASCRIPT: ЛОГИКА СНЕГА, АВТОРИЗАЦИИ И ВСЕХ 16 ГАЙДОВ RMRP
+       ========================================================= -->
+  <script>
+    /**
+     * НАСТРОЙКИ ДОСТУПА ДЛЯ АЛЕКСАНДРА ЗИМЫ
+     */
+    const SECRET_ACCESS_CODE = 'zima';
+    const STORAGE_KEY = 'rmrp_winter_guides_zima_v9_fixed';
+    const CHECKLIST_STORAGE_KEY = 'rmrp_winter_checklist_v9';
+
+    // Все 6 серверов проекта RMRP
+    const RMRP_SERVERS = [
+      { id: 'all', name: 'Все 6 серверов' },
+      { id: 'Рублевка', name: 'Рублевка' },
+      { id: 'Арбат', name: 'Арбат' },
+      { id: 'Патрики', name: 'Патрики' },
+      { id: 'Тверской', name: 'Тверской' },
+      { id: 'Кутузовский', name: 'Кутузовский' },
+      { id: 'Лубянка', name: 'Лубянка' }
+    ];
+
+    // Полная база гайдов по фракциям RMRP + Админка + Законодательство
+    const DEFAULT_GUIDES = [
+      {
+        id: 'zakon-rmrp',
+        title: 'Законодательство RMRP (Официальный УК РФ, КоАП и ФЗ)',
+        icon: '📜',
+        category: 'Законодательство RMRP',
+        server: 'Все серверы',
+        description: 'Актуальная законодательная база проекта RMRP (Криминальная Москва) с официального форума (forum.rmrp.ru/forums/laws/). Обязательна к изучению для сотрудников МВД, ФСВНГ, ФСБ, УФСИН, Прокуратуры, СК, Адвокатуры и кандидатов на обзвон.',
+        requirements: [
+          'Конституция Российской Федерации — основной закон государства, определяющий права и свободы граждан, полномочия Президента, Правительства и судебной системы;',
+          'Уголовный Кодекс РФ (УК РФ — 6 разделов, 22 главы, 114 статей, ст. 1 — ст. 99): Раздел IV (Преступления против личности и собственности) и Раздел V–VI (Преступления против общественной безопасности и гос. власти);',
+          'Кодекс об административных правонарушениях РФ (КоАП РФ): мелкое хулиганство, распитие спиртного, неповиновение законному требованию, нарушение общественного порядка и ПДД;',
+          'Уголовно-процессуальный кодекс РФ (УПК РФ) и Процессуальный кодекс РФ — порядок задержания, обыска, ареста, правило Миранды, вызов адвоката и прокурора;',
+          'Трудовой, Бюджетный и Избирательный кодексы РФ — регулируют рабочие отношения во фракциях, гос. финансирование и выборы;',
+          'ФКЗ «О Правительстве» № 2-ФКЗ, ФКЗ «О судебной системе» № 64-ФКЗ, ФКЗ «Об особых правовых режимах» № 28-ФКЗ;',
+          'Силовые ФЗ: ФЗ «О полиции» № 74-ФЗ, ФЗ «О ФСБ» № 78-ФЗ, ФЗ «О ФСВНГ (Росгвардии)» № 18-ФЗ, ФЗ «О ФСО» № 22-ФЗ, ФЗ «О Прокуратуре» № 14-ФЗ, ФЗ «О Следственном комитете» № 88-ФЗ, ФЗ «Об УИС (УФСИН)» № 66-ФЗ, ФЗ «Об обороне» № 52-ФЗ;',
+          'Гражданские и режимные ФЗ: ФЗ «О закрытых и охраняемых территориях» № 86-ФЗ, ФЗ «Об оружии» № 34-ФЗ, ФЗ «ПДД» № 90-ФЗ, ФЗ «Об адвокатуре» № 50-ФЗ, ФЗ «О гос. службе» № 54-ФЗ, ФЗ «О гос. тайне» № 10-ФЗ, ФЗ «Об охране здоровья» № 29-ФЗ, ФЗ «О СМИ».'
+        ],
+        steps: [
+          'Раздел IV УК РФ (Преступления против личности и собственности): ст. 37 — Убийство; ст. 38 — Причинение тяжкого вреда здоровью; ст. 39 — Угроза убийством; ст. 41 — Похищение человека; ст. 42 — Незаконное лишение свободы; ст. 43 — Нарушение неприкосновенности жилища; ст. 44 — Кража; ст. 46 — Грабёж; ст. 47 — Разбой; ст. 48 / 48-1 — Уничтожение имущества / порча гос. собственности; ст. 49 — Угон авто;',
+          'Раздел V УК РФ (Общественная безопасность и порядок): ст. 53 — Теракт; ст. 55 — Захват заложника; ст. 57 / 58 — НВФ и Бандитизм; ст. 60 — Массовые беспорядки; ст. 61 — Хулиганство; ст. 62 — Незаконное проникновение на закрытый объект (по № 86-ФЗ); ст. 63 — Незаконное оружие и запрещённые СИЗ (по № 34-ФЗ); ст. 64 / 64.1 — Хранение и сбыт наркотиков; ст. 67 — Неуплата штрафа; ст. 68 — Нарушение ПДД;',
+          'Раздел VI УК РФ (Государственная власть и правосудие): ст. 69 — Госизмена; ст. 70 — Посягательство на жизнь гос. деятеля; ст. 74 / 75 — Разглашение/получение гостайны; ст. 76 — Злоупотребление полномочиями; ст. 77 — Превышение полномочий; ст. 78 — Неисполнение приказа; ст. 79 — Получение/дача взятки; ст. 80 — Халатность; ст. 88-1 / 88-2 — Неисполнение требований Прокуратуры или СК; ст. 89 — Посягательство на жизнь сотрудника правоохранительных органов; ст. 90 — Применение насилия к представителю власти; ст. 91 — Оскорбление представителя власти; ст. 93 — Помеха работе сотрудника;',
+          'Порядок задержания по УПК РФ: 1) Надеть наручники и представиться (жетон/удостоверение); 2) Назвать статью УК/КоАП; 3) Провести первичный обыск; 4) Зачитать правило Миранды (право на адвоката и телефонный звонок); 5) При задержании гос. служащего — обязательно вызвать Прокурора и руководство его фракции.'
+        ],
+        serverNotes: 'Справочник синхронизирован с официальным разделом «Общее законодательство» форума RMRP (forum.rmrp.ru/forums/laws/). Перед обзвоном в МВД, ФСБ, СК или Прокуратуру обязательно повторите номера статей УК РФ (особенно ст. 37, 38, 41, 46, 47, 49, 62, 63, 64, 76, 77, 79, 89, 90, 91) и ФЗ № 86-ФЗ о закрытых территориях.'
+      },
+      {
+        id: 'admin-rmrp',
+        title: 'Поступление на пост Администратора (Хелпера) RMRP',
+        icon: '👑',
+        category: 'Администрация проекта',
+        server: 'Все серверы',
+        description: 'Администрация проекта RMRP следит за соблюдением правил сервера, помогает игрокам в репорте, разбирает жалобы на форуме и контролирует честность РП-процесса на всех 6 серверах (Рублевка, Арбат, Патрики, Тверской, Кутузовский, Лубянка). Путь начинается с должности Хелпера (Младшего модератора) с дальнейшим повышением.',
+        requirements: [
+          'Возраст строго от 16 лет (возможны редкие исключения по решению Главной Администрации при высокой адекватности);',
+          'Отличное знание общих правил проекта RMRP, правил криминальных и государственных организаций, а также РП-терминов;',
+          'Адекватность, стрессоустойчивость, грамотная устная и письменная речь;',
+          'Стабильный суточный онлайн (обычно от 3–4 часов в день);',
+          'Отсутствие серьёзных нарушений правил проекта, грубых банов и ЧС проекта/администрации;',
+          'Наличие качественного микрофона и рабочего аккаунта в спец. связи (Discord) для прохождения обзвона.'
+        ],
+        steps: [
+          'Шаг 1: Дождитесь открытия заявок на пост Хелпера / Младшего администратора в официальном Discord-канале вашего сервера RMRP или на форуме проекта;',
+          'Шаг 2: Внимательно заполните анкету кандидата (укажите реальный возраст, часовой пояс, игровой стаж, средний онлайн и почему хотите занять пост);',
+          'Шаг 3: Подготовьтесь к обзвону — повторите все правила сервера (DM, DB, SK, TK, PG, RK, NonRP, правила ограблений, похищений, гос. структур и зелёных зон);',
+          'Шаг 4: В назначенное время зайдите в канал ожидания обзвона в Discord и спокойно, уверенно ответьте на вопросы следящей администрации;',
+          'Шаг 5: После успешного прохождения обзвона пройдите инструктаж, получите права Хелпера и приступайте к помощи игрокам.'
+        ],
+        serverNotes: 'Совет от Александра Зимы: перед подачей заявки на админку поиграйте хотя бы 2–3 недели на выбранном сервере (Рублевка, Арбат, Патрики, Тверской, Кутузовский или Лубянка), изучите карту и механики систем, чтобы на обзвоне уверенно отвечать на практические ситуации.'
+      },
+      {
+        id: 'smi',
+        title: 'СМИ — ВГТРК «Москва LIVE»',
+        icon: '📺',
+        category: 'Государственная фракция',
+        server: 'Все серверы',
+        description: 'СМИ под названием ВГТРК «Москва LIVE» является государственной организацией (фракцией). Это новостное агентство нашего города, огромная новостная сеть, которую называют 4-й властью.\n\nСотрудник «Москва LIVE» занимается сбором, созданием, редактированием, подготовкой и оформлением информации для редакции, помогает гражданам продать, купить, обменять имущество или прорекламировать бизнес.',
+        requirements: [
+          'Паспорт гражданина Российской Федерации;',
+          'Медицинская книжка (медкарта);',
+          'Справка от нарколога;',
+          'Водительское удостоверение.'
+        ],
+        steps: [
+          'По будням: с 09:00 до 09:00 по МСК (при наличии сотрудника отдела кадров);',
+          'По выходным: с 10:00 до 09:00 по МСК (при наличии сотрудника отдела кадров);',
+          'Также следите за объявлениями о наборе в государственных новостях.'
+        ],
+        serverNotes: 'Отличный вариант для старта карьеры на любом из 6 серверов RMRP (Рублевка, Арбат, Патрики, Тверской, Кутузовский, Лубянка) — не требуется военный билет и лицензия на оружие.'
+      },
+      {
+        id: 'cgb-3',
+        title: 'ЦГБ №3 — Центральная городская больница №3',
+        icon: '🏥',
+        category: 'Государственная фракция',
+        server: 'Все серверы',
+        description: 'Центральная Городская Больница под номером 3 является государственной организацией. Это гражданское стационарное медицинское учреждение, направленное на лечение больных и специализированную углубленную дифференциальную диагностику заболеваний.\n\nСотрудник ЦГБ №3 — медицинский работник, взявший на себя ответственность следить за жизнью и здоровьем граждан согласно закону и уставу.',
+        requirements: [
+          'Паспорт нового образца;',
+          'Водительское удостоверение;',
+          'Диплом о медицинском образовании;',
+          'Медицинская карта;',
+          'Справка от нарколога.'
+        ],
+        steps: [
+          'По будням: с 17:00 до 17:30 по МСК;',
+          'По выходным: с 20:00 до 20:30 по МСК;',
+          'Приходите в приёмное отделение ЦГБ №3 в указанное время с полным пакетом документов.'
+        ],
+        serverNotes: 'Заранее получите диплом о медицинском образовании, чтобы не терять время перед собеседованием.'
+      },
+      {
+        id: 'cgb-7',
+        title: 'ЦГБ №7 — Центральная городская больница №7',
+        icon: '🚑',
+        category: 'Государственная фракция',
+        server: 'Все серверы',
+        description: 'Больница №7 — гражданское стационарное медицинское учреждение, направленное на лечение больных и специализированную углубленную дифференциальную диагностику заболеваний в стационарных условиях.\n\nСотрудник ЦГБ №7 — гражданин, прошедший обучение в медицинском учебном заведении и взявший на себя обязательства за покой и здоровье граждан.',
+        requirements: [
+          'Паспорт нового образца;',
+          'Водительское удостоверение;',
+          'Диплом о медицинском образовании;',
+          'Медицинская карта;',
+          'Справка от нарколога.'
+        ],
+        steps: [
+          'По будням: с 16:30 до 17:00 по МСК;',
+          'По выходным: с 20:30 до 21:00 по МСК;',
+          'Собеседование проходит в холле ЦГБ №7 строго в указанные часы.'
+        ],
+        serverNotes: 'Обратите внимание: время набора в ЦГБ №7 отличается от ЦГБ №3 на полчаса, можно успеть на оба собеседования за один вечер.'
+      },
+      {
+        id: 'vs-rf',
+        title: 'ВС РФ — Вооружённые силы Московии',
+        icon: '🎖️',
+        category: 'Государственная фракция',
+        server: 'Все серверы',
+        description: 'Вооружённые Силы Российской Федерации (ВС РФ) являются государственной организацией (фракцией), предназначенной для защиты суверенитета, территориальной целостности и национальных интересов государства.\n\nИменно здесь игроки проходят срочную или контрактную службу, охраняют КПП и склады, а также получают военный билет для дальнейшего пути в силовые ведомства.',
+        requirements: [
+          'Паспорт гражданина Российской Федерации;',
+          'Мед. книжка (медицинская карта);',
+          'Справка от нарколога;',
+          'Водительское удостоверение.'
+        ],
+        steps: [
+          'В здании военного комиссариата (военкомат) — по объявлению в гос. новостях;',
+          'У ворот военной части — по объявлению в гос. новостях.'
+        ],
+        serverNotes: 'Обязательная ступень для тех, кто хочет в будущем попасть в МВД, УГИБДД, Росгвардию, УФСИН, ФСО, ФСБ или Прокуратуру.'
+      },
+      {
+        id: 'ufsin',
+        title: 'УФСИН — Федеральная служба исполнения наказаний',
+        icon: '⛓️',
+        category: 'Государственная фракция',
+        server: 'Все серверы',
+        description: 'Федеральная служба исполнения наказаний (УФСИН) — федеральный орган исполнительной власти, осуществляющий контроль и надзор в сфере исполнения уголовных наказаний, содержание лиц под стражей, их охрану и конвоирование.',
+        requirements: [
+          'Паспорт гражданина Российской Федерации;',
+          'Медицинская карта;',
+          'Справка от нарколога;',
+          'Водительское удостоверение;',
+          'Лицензия на оружие;',
+          'Военный билет;',
+          'Не иметь судимостей;',
+          'Не иметь татуировок на открытых частях тела.'
+        ],
+        steps: [
+          'По объявлению в государственных новостях;',
+          'Через электронную заявку на форуме проекта.'
+        ],
+        serverNotes: 'Перед подачей заявки убедитесь, что сведены все татуировки на лице, шее и кистях рук.'
+      },
+      {
+        id: 'fsvng',
+        title: 'ФСВНГ — Росгвардия',
+        icon: '🛡️',
+        category: 'Государственная фракция',
+        server: 'Все серверы',
+        description: 'Федеральная Служба Войск Национальной Гвардии (ФСВНГ, в простонародье Росгвардия) — орган исполнительной власти с широкими полномочиями, созданный на базе внутренних войск. Обеспечивает общественную безопасность, силовую поддержку и охрану порядка.',
+        requirements: [
+          'Паспорт гражданина Российской Федерации;',
+          'Медицинская карта;',
+          'Справка от нарколога;',
+          'Водительское удостоверение;',
+          'Лицензия на оружие;',
+          'Военный билет;',
+          'Не иметь судимостей;',
+          'Не иметь татуировок на открытых частях тела.'
+        ],
+        steps: [
+          'По объявлению в государственных новостях;',
+          'Через электронную заявку на официальном форуме RMRP.'
+        ],
+        serverNotes: 'Отличный выбор для любителей спецопераций и силовой работы после получения военного билета.'
+      },
+      {
+        id: 'ugibdd',
+        title: 'УГИБДД — Дорожно-патрульная служба (ДПС)',
+        icon: '🚓',
+        category: 'Государственная фракция',
+        server: 'Все серверы',
+        description: 'УГИБДД (ДПС) — основной отдел МВД, направленный на патрулирование областных и городских дорог, обеспечение безопасности дорожного движения, выявление и пресечение административных и уголовных нарушений на дорогах.',
+        requirements: [
+          'Паспорт гражданина Российской Федерации;',
+          'Медицинская карта;',
+          'Справка от нарколога;',
+          'Водительское удостоверение;',
+          'Лицензия на оружие;',
+          'Военный билет;',
+          'Не иметь судимостей;',
+          'Не иметь татуировок на открытых частях тела.'
+        ],
+        steps: [
+          'По объявлению в государственных новостях;',
+          'Через электронную заявку на форуме.'
+        ],
+        serverNotes: 'Перед собеседованием обязательно повторите ПДД и КоАП вашего сервера (Рублевка, Арбат, Патрики, Тверской, Кутузовский или Лубянка).'
+      },
+      {
+        id: 'uvd',
+        title: 'УВД по ЦАО / МВД (Патрульно-постовая служба)',
+        icon: '👮',
+        category: 'Государственная фракция',
+        server: 'Все серверы',
+        description: 'УВД (МВД, патрульно-постовая служба) — основной орган внутренних дел, направленный на патрулирование города Москва, обеспечение общественной безопасности, охрану правопорядка, выявление и пресечение преступлений.',
+        requirements: [
+          'Паспорт гражданина Российской Федерации;',
+          'Медицинская карта;',
+          'Справка от нарколога;',
+          'Водительское удостоверение;',
+          'Лицензия на оружие;',
+          'Военный билет;',
+          'Не иметь судимостей;',
+          'Не иметь татуировок на открытых частях тела.'
+        ],
+        steps: [
+          'По объявлению в государственных новостях;',
+          'Через электронную заявку на форуме.'
+        ],
+        serverNotes: 'Классическая полицейская служба в центре Москвы с дальнейшей перспективой перевода в ФСБ или СК.'
+      },
+      {
+        id: 'prok-sk',
+        title: 'Прокуратура и Следственный комитет (СК)',
+        icon: '⚖️',
+        category: 'Государственная фракция',
+        server: 'Все серверы',
+        description: 'Прокуратура и Следственный Комитет находятся в одном здании и являются высшими надзорными и следственными государственными органами области (важно: для вступления возраст 16+ необязателен!).\n\n• Чем занимается Прокуратура: осуществляет высший надзор за соблюдением Конституции и законов всеми государственными структурами (МВД, УГИБДД, ФСВНГ, УФСИН, ВС РФ), проводит плановые и внеплановые проверки гос. организаций, рассматривает жалобы граждан на незаконные действия силовиков, выписывает ордера и поддерживает государственное обвинение в суде.\n\n• Чем занимается Следственный комитет (СК): расследует тяжкие и особо тяжкие преступления, коррупцию, должностные преступления сотрудников гос. органов, проводит допросы, очные ставки, обыски, собирает доказательную базу и возбуждает уголовные дела.',
+        requirements: [
+          'Возрастного ограничения 16+ НЕТ (необязательно иметь 16+ лет в реальной жизни — главное адекватность, сдержанность и знание законов);',
+          'Паспорт гражданина Российской Федерации (без опечаток в имени и фамилии);',
+          'Действующая медицинская карта (без заболеваний и отклонений);',
+          'Свежая справка от нарколога (отсутствие наркозависимости);',
+          'Водительское удостоверение (категория B);',
+          'Военный билет (обязательно пройденная служба в ВС РФ);',
+          'Наличие высшего юридического образования (диплом, полученный в аккредитованном ВУЗе в области юриспруденции);',
+          'Полное отсутствие судимостей и активных штрафов/розыска;',
+          'Отсутствие татуировок на открытых частях тела (лицо, шея, кисти рук);',
+          'Уверенное знание законодательной базы сервера (Конституция, УК РФ, УПК РФ, КоАП, ФЗ «О Прокуратуре» № 14-ФЗ, ФЗ «О Следственном комитете» № 88-ФЗ, Процессуальный кодекс).'
+        ],
+        steps: [
+          'Шаг 1: Заранее соберите весь пакет документов, отслужите в ВС РФ для получения военного билета и получите диплом юриста в аккредитованном ВУЗе;',
+          'Шаг 2: Зайдите на официальный форум проекта RMRP в раздел вашего сервера (Рублевка, Арбат, Патрики, Тверской, Кутузовский или Лубянка) → Государственные организации → Прокуратура / Следственный комитет;',
+          'Шаг 3: Внимательно заполните электронное заявление на трудоустройство (академию / стажировку) строго по коду подачи, прикрепив скриншоты всех документов (паспорт, медицинская карта, лицензии, военный билет, диплом);',
+          'Шаг 4: Дождитесь одобрения заявки руководством Прокуратуры или СК на форуме и свяжитесь с проверяющим в спец. связи (Discord);',
+          'Шаг 5: Пройдите устное собеседование / аттестацию по знанию законов, УПК и разбору практических ситуаций (например, порядок задержания гос. служащего), после чего приступайте к стажировке.'
+        ],
+        serverNotes: 'Важно: в отличие от поста Администратора, в Прокуратуру и СК необязательно иметь 16+ лет — оценивают в первую очередь вашу адекватность и знание кодексов! В Прокуратуру и СК не берут по обычному объявлению в гос. новостях «с улицы» — набор идёт только через форум и аттестацию.'
+      },
+      {
+        id: 'fso',
+        title: 'ФСО — Федеральная служба охраны',
+        icon: '🕶️',
+        category: 'Государственная фракция',
+        server: 'Все серверы',
+        description: 'ФСО — федеральный орган исполнительной власти, который осуществляет государственную охрану Президента РФ, высших органов законодательной, исполнительной и судебной властей РФ и их должностных лиц.',
+        requirements: [
+          'Паспорт гражданина Российской Федерации;',
+          'Медицинская карта;',
+          'Справка от нарколога;',
+          'Водительское удостоверение;',
+          'Военный билет;',
+          'Не иметь судимостей;',
+          'Не иметь татуировок на открытых частях тела.'
+        ],
+        steps: [
+          'По объявлению в государственных новостях;',
+          'Через электронную заявку на форуме.'
+        ],
+        serverNotes: 'Элитная охранная структура с высокой дисциплиной и сопровождением первых лиц области.'
+      },
+      {
+        id: 'fsb',
+        title: 'ФСБ — Федеральная служба безопасности',
+        icon: '🦅',
+        category: 'Государственная фракция',
+        server: 'Все серверы',
+        description: 'ФСБ — высшая силовая структура безопасности.\n\nОсновные задачи ФСБ:\n• контрразведывательная и разведывательная деятельность;\n• борьба с терроризмом и особо опасными формами преступности;\n• пограничная деятельность и информационная безопасность;\n• осуществление экономической безопасности и борьба с коррупцией.',
+        requirements: [
+          'Краткая РП-биография, расписывающая историю вашей жизни;',
+          'Заполненная анкета на официальном сайте/форуме ФСБ РФ;',
+          'Паспорт гражданина Российской Федерации;',
+          'Медицинская карта и справка от нарколога;',
+          'Водительское удостоверение и лицензия на оружие;',
+          'Военный билет;',
+          'Не иметь судимостей и татуировок на открытых частях тела.'
+        ],
+        steps: [
+          'Электронная заявка ИСКЛЮЧИТЕЛЬНО от действующих сотрудников силовых структур (МВД, УГИБДД, ФСВНГ, УФСИН, ВС РФ, ФСО).'
+        ],
+        serverNotes: 'В ФСБ нельзя устроиться «с улицы» по гос. новостям — сначала нужно построить карьеру в силовой гос. фракции и написать качественную биографию.'
+      },
+      {
+        id: 'gov-adv',
+        title: 'Правительство и Адвокатура',
+        icon: '🏛️',
+        category: 'Государственная фракция',
+        server: 'Все серверы',
+        description: 'Правительство и Адвокатура находятся в одном здании и являются центральными государственными органами власти области.\n\nСотрудники Правительства управляют экономикой, лицензированием и работой министерств, а Адвокатура защищает права граждан при задержаниях и в судах.',
+        requirements: [
+          'Паспорт гражданина Российской Федерации;',
+          'Медицинская карта;',
+          'Справка от нарколога;',
+          'Водительское удостоверение;',
+          'Лицензия на оружие;',
+          'Военный билет;',
+          'Не иметь судимостей;',
+          'Не иметь татуировок на открытых частях тела.'
+        ],
+        steps: [
+          'По объявлению в государственных новостях;',
+          'Через электронную заявку на форуме.'
+        ],
+        serverNotes: 'Идеально для тех, кто любит политику, юриспруденцию, адвокатскую практику и управление областью.'
+      },
+      {
+        id: 'bakshish',
+        title: 'Кафе «Бакшиш» (Криминальная фракция)',
+        icon: '🍢',
+        category: 'Криминальная фракция',
+        server: 'Все серверы',
+        description: 'Кафе «Бакшиш» является криминальной организацией (фракцией) под прикрытием заведения с лучшей кавказской кухней в области. Но не волнуйтесь, если увидите вооружённых людей в зале — официально это «охрана».',
+        requirements: [
+          'Паспорт гражданина Российской Федерации;',
+          'Медицинская карта.'
+        ],
+        steps: [
+          'Лично посетите кафе и поговорите с сотрудником;',
+          'Оставьте резюме в спец. связи или на официальном портале;',
+          'Позвоните по номеру, взяв его на ресепшене;',
+          'Следите за объявлениями с вакансиями в государственных новостях.'
+        ],
+        serverNotes: 'Минимальный порог входа — не нужны военный билет, лицензии и диплом.'
+      },
+      {
+        id: 'belozerskoe',
+        title: 'СТО «Белозёрское» (Криминальная фракция)',
+        icon: '🔧',
+        category: 'Криминальная фракция',
+        server: 'Все серверы',
+        description: 'СТО «Белозёрское» (Сервис Технического Обслуживания) является криминальной организацией (фракцией). Официально это автосервис, где проводится диагностика, ремонт и обслуживание автомобилей — от замены масла до капитального ремонта двигателя.',
+        requirements: [
+          'Паспорт гражданина Российской Федерации;',
+          'Медицинская карта;',
+          'Заполнить Электронное заявление в СТО.'
+        ],
+        steps: [
+          'Лично посетите СТО и поговорите с сотрудником;',
+          'Оставьте резюме в спец. связи или на официальном портале;',
+          'Позвоните по номеру, взяв его на ресепшене;',
+          'Следите за объявлениями с вакансиями в государственных новостях.'
+        ],
+        serverNotes: 'Для вступления в СТО «Белозёрское» обязательно заранее подайте электронное заявление.'
+      },
+      {
+        id: 'night-wolves',
+        title: 'Бар «Ночные Волки» (Криминальная фракция)',
+        icon: '🏍️',
+        category: 'Криминальная фракция',
+        server: 'Все серверы',
+        description: 'Бар «Ночные Волки» является криминальной организацией (фракцией), объединяющей атмосферу байкерского клуба и уютного заведения для отдыха с музыкой, едой и напитками в компании единомышленников.',
+        requirements: [
+          'Паспорт гражданина Российской Федерации;',
+          'Медицинская карта.'
+        ],
+        steps: [
+          'Лично посетите бар и поговорите с сотрудником (Бар открыт с 08:00 до 22:00 по МСК);',
+          'Оставьте резюме в спец. связи или на официальном портале;',
+          'Позвоните по номеру, взяв его на ресепшене.'
+        ],
+        serverNotes: 'Учитывайте график работы бара при личном визите: с 08:00 до 22:00 по МСК.'
+      },
+      {
+        id: 'syndicate',
+        title: 'ЧОП «Синдикат» (Криминальная фракция)',
+        icon: '💼',
+        category: 'Криминальная фракция',
+        server: 'Все серверы',
+        description: 'ЧОП «Синдикат» является криминальной организацией (фракцией), действующей под прикрытием ведущей компании в сфере обеспечения безопасности и комплексных охранных решений для клиентов.',
+        requirements: [
+          'Паспорт гражданина Российской Федерации;',
+          'Медицинская карта.'
+        ],
+        steps: [
+          'Лично посетите здание ЧОПа и поговорите с сотрудником;',
+          'Оставьте резюме в спец. связи или на официальном портале;',
+          'Позвоните по номеру, взяв его на ресепшене;',
+          'Следите за объявлениями с вакансиями в государственных новостях.'
+        ],
+        serverNotes: 'Строгий деловой стиль и командная игра на всех 6 серверах RMRP.'
+      }
+    ];
+
+    // Состояние приложения
+    let guides = [];
+    let checkedItems = {};
+    let selectedServer = 'all';
+    let searchQuery = '';
+    let selectedCategory = 'all';
+    let activeGuideId = null;
+
+    // Утилита для безопасного HTML
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Уведомления (вместо alert)
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      const borderColor = type === 'error'
+        ? 'border-rose-400/40 bg-rose-950/90 text-rose-100'
+        : 'border-white/25 bg-zinc-900/95 text-white';
+
+      toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-2xl border backdrop-blur-md shadow-xl text-xs sm:text-sm font-medium transition-all duration-300 ${borderColor}`;
+      toast.innerHTML = `<i data-lucide="snowflake" class="w-4 h-4 shrink-0"></i><span>${escapeHtml(message)}</span>`;
+      container.appendChild(toast);
+
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(8px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+
+    // Загрузка данных из localStorage
+    function loadData() {
+      try {
+        const savedGuides = localStorage.getItem(STORAGE_KEY);
+        if (savedGuides) {
+          const parsed = JSON.parse(savedGuides);
+          guides = Array.isArray(parsed) && parsed.length > 0 ? parsed : [...DEFAULT_GUIDES];
+        } else {
+          guides = [...DEFAULT_GUIDES];
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(guides));
+        }
+
+        const savedChecklist = localStorage.getItem(CHECKLIST_STORAGE_KEY);
+        if (savedChecklist) {
+          checkedItems = JSON.parse(savedChecklist) || {};
+        }
+      } catch (e) {
+        guides = [...DEFAULT_GUIDES];
+        checkedItems = {};
+      }
+    }
+
+    function saveGuides() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(guides));
+      } catch (e) {
+        showToast('Не удалось сохранить в localStorage', 'error');
+      }
+    }
+
+    function saveChecklist() {
+      try {
+        localStorage.setItem(CHECKLIST_STORAGE_KEY, JSON.stringify(checkedItems));
+      } catch (e) {
+        // Игнорируем ошибку переполнения хранилища
+      }
+    }
+
+    // Вход на портал
+    function unlockPortal(bypass = false) {
+      const input = document.getElementById('access-code-input');
+      const errorEl = document.getElementById('login-error');
+      const val = input ? input.value.trim().toLowerCase() : '';
+
+      if (bypass || val === SECRET_ACCESS_CODE) {
+        if (errorEl) errorEl.classList.add('hidden');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const mainPortal = document.getElementById('main-portal');
+
+        if (welcomeScreen && mainPortal) {
+          welcomeScreen.style.opacity = '0';
+          setTimeout(() => {
+            welcomeScreen.classList.add('hidden');
+            mainPortal.classList.remove('hidden');
+            requestAnimationFrame(() => {
+              mainPortal.style.opacity = '1';
+            });
+            showToast('Добро пожаловать в штаб RMRP, Александр Зима! ❄️');
+          }, 300);
+        }
+      } else {
+        if (errorEl) errorEl.classList.remove('hidden');
+        showToast('Неверный секретный код!', 'error');
+      }
+    }
+
+    // Рендер кнопок серверов
+    function renderServerTabs() {
+      const container = document.getElementById('server-tabs');
+      if (!container) return;
+
+      container.innerHTML = RMRP_SERVERS.map(srv => {
+        const isActive = selectedServer === srv.id;
+        const activeClasses = isActive
+          ? 'bg-white text-black font-bold border-white shadow-md shadow-white/15'
+          : 'bg-zinc-950/80 hover:bg-zinc-900 text-zinc-300 border-white/15';
+
+        return `
+          <button
+            type="button"
+            data-server="${escapeHtml(srv.id)}"
+            class="server-tab-btn px-4 py-2 rounded-xl border text-xs sm:text-sm whitespace-nowrap transition cursor-pointer ${activeClasses}"
+          >
+            ${escapeHtml(srv.name)}
+          </button>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.server-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selectedServer = btn.getAttribute('data-server');
+          const badge = document.getElementById('active-server-badge');
+          if (badge) {
+            badge.textContent = `Сервер: ${selectedServer === 'all' ? 'Все 6 серверов' : selectedServer}`;
+          }
+          renderServerTabs();
+          renderGuides();
+        });
+      });
+    }
+
+    // Рендер карточек фракций
+    function renderGuides() {
+      const grid = document.getElementById('guides-grid');
+      const emptyState = document.getElementById('empty-state');
+      const counter = document.getElementById('guides-counter');
+      if (!grid) return;
+
+      const filtered = guides.filter(item => {
+        const matchesServer =
+          selectedServer === 'all' ||
+          item.server === 'Все серверы' ||
+          item.server === selectedServer;
+
+        const matchesCategory =
+          selectedCategory === 'all' || item.category === selectedCategory;
+
+        const q = searchQuery.toLowerCase();
+        const matchesSearch =
+          !q ||
+          item.title.toLowerCase().includes(q) ||
+          item.description.toLowerCase().includes(q) ||
+          item.requirements.some(r => r.toLowerCase().includes(q)) ||
+          item.steps.some(s => s.toLowerCase().includes(q));
+
+        return matchesServer && matchesCategory && matchesSearch;
+      });
+
+      if (counter) {
+        counter.textContent = `Показано разделов: ${filtered.length}`;
+      }
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        if (emptyState) emptyState.classList.remove('hidden');
+        return;
+      }
+
+      if (emptyState) emptyState.classList.add('hidden');
+
+      grid.innerHTML = filtered.map(guide => {
+        let badgeStyle = 'bg-white/10 text-zinc-200 border-white/20';
+        if (guide.category === 'Криминальная фракция') {
+          badgeStyle = 'bg-rose-500/15 text-rose-200 border-rose-400/25';
+        } else if (guide.category === 'Администрация проекта') {
+          badgeStyle = 'bg-amber-500/15 text-amber-200 border-amber-400/25';
+        }
+
+        const previewReqs = guide.requirements.slice(0, 3);
+        const extraCount = Math.max(0, guide.requirements.length - 3);
+
+        return `
+          <article
+            data-guide-id="${escapeHtml(guide.id)}"
+            class="guide-card frost-glass-card rounded-3xl p-5 sm:p-6 flex flex-col justify-between cursor-pointer group"
+          >
+            <div>
+              <div class="flex items-start justify-between gap-3 mb-4">
+                <div class="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-2xl shrink-0 group-hover:scale-105 transition">
+                  ${escapeHtml(guide.icon || '❄️')}
+                </div>
+                <span class="text-[11px] font-semibold px-2.5 py-1 rounded-lg border ${badgeStyle}">
+                  ${escapeHtml(guide.category)}
+                </span>
+              </div>
+
+              <h3 class="font-display text-lg font-bold text-white mb-2 group-hover:text-zinc-200 transition">
+                ${escapeHtml(guide.title)}
+              </h3>
+
+              <p class="text-xs sm:text-sm text-zinc-300 line-clamp-3 mb-4 leading-relaxed">
+                ${escapeHtml(guide.description)}
+              </p>
+
+              <div class="space-y-1.5 mb-5">
+                <span class="text-[11px] uppercase tracking-wider font-semibold text-zinc-400 block">Основные требования:</span>
+                <ul class="space-y-1 text-xs text-zinc-300">
+                  ${previewReqs.map(req => `
+                    <li class="flex items-start gap-1.5">
+                      <span class="text-white mt-0.5">•</span>
+                      <span class="line-clamp-1">${escapeHtml(req)}</span>
+                    </li>
+                  `).join('')}
+                </ul>
+                ${extraCount > 0 ? `<span class="text-[11px] text-zinc-400 block pt-0.5">+ ещё ${extraCount} пункт(ов)...</span>` : ''}
+              </div>
+            </div>
+
+            <div class="pt-4 border-t border-white/10 flex items-center justify-between gap-2">
+              <span class="text-xs text-zinc-400 flex items-center gap-1">
+                <i data-lucide="server" class="w-3.5 h-3.5"></i>
+                ${escapeHtml(guide.server)}
+              </span>
+              <span class="px-3.5 py-1.5 rounded-xl bg-white text-black text-xs font-bold group-hover:bg-zinc-200 transition flex items-center gap-1">
+                <span>Открыть гайд</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+              </span>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.guide-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const id = card.getAttribute('data-guide-id');
+          openGuideModal(id);
+        });
+      });
+
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    }
+
+    // Открытие модального окна с подробным гайдом
+    function openGuideModal(id) {
+      const guide = guides.find(g => g.id === id);
+      if (!guide) return;
+
+      activeGuideId = id;
+      const modal = document.getElementById('guide-modal');
+      document.getElementById('modal-icon-box').textContent = guide.icon || '❄️';
+      document.getElementById('modal-category').textContent = guide.category;
+      document.getElementById('modal-servers').textContent = `Серверы: ${guide.server}`;
+      document.getElementById('modal-title').textContent = guide.title;
+      document.getElementById('modal-description').textContent = guide.description;
+      document.getElementById('modal-server-notes').textContent = guide.serverNotes || 'Актуально для всех 6 серверов RMRP.';
+
+      renderModalChecklist(guide);
+
+      const stepsEl = document.getElementById('modal-steps');
+      stepsEl.innerHTML = guide.steps.map(step => `
+        <li class="flex items-start gap-2.5 p-2.5 rounded-xl bg-black/50 border border-white/10">
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-white shrink-0 mt-0.5"></i>
+          <span>${escapeHtml(step)}</span>
+        </li>
+      `).join('');
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    }
+
+    // Чек-лист требований внутри модалки
+    function renderModalChecklist(guide) {
+      const reqEl = document.getElementById('modal-requirements');
+      const progressEl = document.getElementById('checklist-progress');
+      if (!reqEl) return;
+
+      const guideChecks = checkedItems[guide.id] || {};
+      let doneCount = 0;
+
+      reqEl.innerHTML = guide.requirements.map((req, idx) => {
+        const isDone = Boolean(guideChecks[idx]);
+        if (isDone) doneCount++;
+
+        return `
+          <li
+            data-req-idx="${idx}"
+            class="req-check-item flex items-start gap-3 p-2.5 rounded-xl border transition cursor-pointer select-none ${
+              isDone
+                ? 'bg-white/15 border-white/40 text-white line-through opacity-80'
+                : 'bg-black/40 hover:bg-white/5 border-white/10 text-zinc-200'
+            }"
+          >
+            <div class="w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 ${
+              isDone ? 'bg-white border-white text-black' : 'border-white/30'
+            }">
+              ${isDone ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ''}
+            </div>
+            <span class="text-xs sm:text-sm leading-snug">${escapeHtml(req)}</span>
+          </li>
+        `;
+      }).join('');
+
+      if (progressEl) {
+        progressEl.textContent = `${doneCount} / ${guide.requirements.length} готово`;
+      }
+
+      document.querySelectorAll('.req-check-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const idx = item.getAttribute('data-req-idx');
+          if (!checkedItems[guide.id]) checkedItems[guide.id] = {};
+          checkedItems[guide.id][idx] = !checkedItems[guide.id][idx];
+          saveChecklist();
+          renderModalChecklist(guide);
+          if (window.lucide) lucide.createIcons();
+        });
+      });
+    }
+
+    function closeGuideModal() {
+      const modal = document.getElementById('guide-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      activeGuideId = null;
+    }
+
+    // Анимация падающего белого снега на чёрном фоне
+    function initSnowCanvas() {
+      const canvas = document.getElementById('snow-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      let width = (canvas.width = window.innerWidth);
+      let height = (canvas.height = window.innerHeight);
+
+      window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      });
+
+      const flakeCount = Math.min(130, Math.floor((width * height) / 11000));
+      const flakes = Array.from({ length: flakeCount }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        r: Math.random() * 2.6 + 0.8,
+        speedY: Math.random() * 1.1 + 0.4,
+        speedX: Math.random() * 0.6 - 0.3,
+        opacity: Math.random() * 0.65 + 0.25
+      }));
+
+      function drawSnow() {
+        ctx.clearRect(0, 0, width, height);
+
+        for (let i = 0; i < flakes.length; i++) {
+          const f = flakes[i];
+          ctx.beginPath();
+          ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 255, 255, ${f.opacity})`;
+          ctx.fill();
+
+          f.y += f.speedY;
+          f.x += f.speedX + Math.sin(f.y * 0.01) * 0.2;
+
+          if (f.y > height) {
+            f.y = -5;
+            f.x = Math.random() * width;
+          }
+          if (f.x > width) f.x = 0;
+          if (f.x < 0) f.x = width;
+        }
+
+        requestAnimationFrame(drawSnow);
+      }
+
+      drawSnow();
+    }
+
+    // Инициализация всех событий при загрузке страницы
+    window.addEventListener('DOMContentLoaded', () => {
+      loadData();
+      initSnowCanvas();
+      renderServerTabs();
+      renderGuides();
+
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+
+      // Кнопки входа
+      const enterBtn = document.getElementById('enter-site-btn');
+      const quickBtn = document.getElementById('quick-creator-btn');
+      const codeInput = document.getElementById('access-code-input');
+      const togglePassBtn = document.getElementById('toggle-password-btn');
+
+      if (enterBtn) enterBtn.addEventListener('click', () => unlockPortal(false));
+      if (quickBtn) quickBtn.addEventListener('click', () => unlockPortal(true));
+      if (codeInput) {
+        codeInput.addEventListener('keydown', e => {
+          if (e.key === 'Enter') unlockPortal(false);
+        });
+      }
+      if (togglePassBtn && codeInput) {
+        togglePassBtn.addEventListener('click', () => {
+          codeInput.type = codeInput.type === 'password' ? 'text' : 'password';
+        });
+      }
+
+      // Поиск и фильтры
+      const searchInput = document.getElementById('search-input');
+      const categoryFilter = document.getElementById('category-filter');
+      const resetFiltersBtn = document.getElementById('reset-filters-btn');
+
+      if (searchInput) {
+        searchInput.addEventListener('input', e => {
+          searchQuery = e.target.value;
+          renderGuides();
+        });
+      }
+
+      if (categoryFilter) {
+        categoryFilter.addEventListener('change', e => {
+          selectedCategory = e.target.value;
+          renderGuides();
+        });
+      }
+
+      if (resetFiltersBtn) {
+        resetFiltersBtn.addEventListener('click', () => {
+          selectedServer = 'all';
+          selectedCategory = 'all';
+          searchQuery = '';
+          if (searchInput) searchInput.value = '';
+          if (categoryFilter) categoryFilter.value = 'all';
+          const badge = document.getElementById('active-server-badge');
+          if (badge) badge.textContent = 'Сервер: Все 6 серверов';
+          renderServerTabs();
+          renderGuides();
+        });
+      }
+
+      // Закрытие модалки гайда и удаление карточки
+      const closeGuideBtn = document.getElementById('close-guide-modal');
+      const closeGuideBottomBtn = document.getElementById('close-guide-modal-bottom');
+      const deleteGuideBtn = document.getElementById('delete-guide-btn');
+      const guideModal = document.getElementById('guide-modal');
+
+      if (closeGuideBtn) closeGuideBtn.addEventListener('click', closeGuideModal);
+      if (closeGuideBottomBtn) closeGuideBottomBtn.addEventListener('click', closeGuideModal);
+      if (guideModal) {
+        guideModal.addEventListener('click', e => {
+          if (e.target === guideModal) closeGuideModal();
+        });
+      }
+
+      if (deleteGuideBtn) {
+        deleteGuideBtn.addEventListener('click', () => {
+          if (!activeGuideId) return;
+          guides = guides.filter(g => g.id !== activeGuideId);
+          saveGuides();
+          closeGuideModal();
+          renderGuides();
+          showToast('Карточка удалена из списка');
+        });
+      }
+
+      // Модалка добавления нового гайда
+      const addModal = document.getElementById('add-guide-modal');
+      const openAddBtn = document.getElementById('open-add-modal-btn');
+      const closeAddBtn = document.getElementById('close-add-modal');
+      const cancelAddBtn = document.getElementById('cancel-add-btn');
+      const addForm = document.getElementById('add-guide-form');
+
+      function closeAddModal() {
+        if (addModal) {
+          addModal.classList.add('hidden');
+          addModal.classList.remove('flex');
+        }
+      }
+
+      if (openAddBtn && addModal) {
+        openAddBtn.addEventListener('click', () => {
+          addModal.classList.remove('hidden');
+          addModal.classList.add('flex');
+        });
+      }
+      if (closeAddBtn) closeAddBtn.addEventListener('click', closeAddModal);
+      if (cancelAddBtn) cancelAddBtn.addEventListener('click', closeAddModal);
+      if (addModal) {
+        addModal.addEventListener('click', e => {
+          if (e.target === addModal) closeAddModal();
+        });
+      }
+
+      if (addForm) {
+        addForm.addEventListener('submit', e => {
+          e.preventDefault();
+          const title = document.getElementById('new-title').value.trim();
+          const icon = document.getElementById('new-icon').value.trim() || '❄️';
+          const category = document.getElementById('new-category').value;
+          const server = document.getElementById('new-server').value;
+          const description = document.getElementById('new-description').value.trim();
+          const requirements = document
+            .getElementById('new-requirements')
+            .value.split('\n')
+            .map(s => s.trim())
+            .filter(Boolean);
+          const steps = document
+            .getElementById('new-steps')
+            .value.split('\n')
+            .map(s => s.trim())
+            .filter(Boolean);
+          const serverNotes = document.getElementById('new-server-notes').value.trim();
+
+          const newGuide = {
+            id: 'custom-' + Date.now(),
+            title,
+            icon,
+            category,
+            server,
+            description,
+            requirements,
+            steps,
+            serverNotes: serverNotes || 'Добавлено пользователем портала.'
+          };
+
+          guides.unshift(newGuide);
+          saveGuides();
+          addForm.reset();
+          closeAddModal();
+          renderGuides();
+          showToast('Новый гайд успешно добавлен! ❄️');
+        });
+      }
+
+      // Модалка шпаргалки
+      const cheatModal = document.getElementById('cheatsheet-modal');
+      const openCheatBtn = document.getElementById('open-cheatsheet-btn');
+      const closeCheatBtn = document.getElementById('close-cheatsheet-modal');
+
+      if (openCheatBtn && cheatModal) {
+        openCheatBtn.addEventListener('click', () => {
+          cheatModal.classList.remove('hidden');
+          cheatModal.classList.add('flex');
+        });
+      }
+      if (closeCheatBtn && cheatModal) {
+        closeCheatBtn.addEventListener('click', () => {
+          cheatModal.classList.add('hidden');
+          cheatModal.classList.remove('flex');
+        });
+      }
+      if (cheatModal) {
+        cheatModal.addEventListener('click', e => {
+          if (e.target === cheatModal) {
+            cheatModal.classList.add('hidden');
+            cheatModal.classList.remove('flex');
+          }
+        });
+      }
+
+      // Экспорт JSON в буфер обмена
+      const exportBtn = document.getElementById('export-data-btn');
+      if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+          const jsonStr = JSON.stringify(guides, null, 2);
+          const tempInput = document.createElement('textarea');
+          tempInput.value = jsonStr;
+          document.body.appendChild(tempInput);
+          tempInput.select();
+          try {
+            document.execCommand('copy');
+            showToast('JSON-код всех гайдов скопирован в буфер обмена!');
+          } catch (err) {
+            showToast('Не удалось скопировать код', 'error');
+          }
+          document.body.removeChild(tempInput);
+        });
+      }
+
+      // Выход на экран приветствия
+      const logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+          const welcomeScreen = document.getElementById('welcome-screen');
+          const mainPortal = document.getElementById('main-portal');
+          if (welcomeScreen && mainPortal) {
+            mainPortal.style.opacity = '0';
+            setTimeout(() => {
+              mainPortal.classList.add('hidden');
+              welcomeScreen.classList.remove('hidden');
+              requestAnimationFrame(() => {
+                welcomeScreen.style.opacity = '1';
+              });
+            }, 300);
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
